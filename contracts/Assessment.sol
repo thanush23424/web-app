@@ -1,21 +1,27 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
-
-//import "hardhat/console.sol";
 
 contract Assessment {
     address payable public owner;
     uint256 public balance;
 
-    event Deposit(uint256 amount);
-    event Withdraw(uint256 amount);
+    event Deposit(uint256 amount, uint256 timestamp);
+    event Withdraw(uint256 amount, uint256 timestamp);
+
+    struct Transaction {
+        string transactionType;
+        uint256 amount;
+        uint256 timestamp;
+        bytes32 txHash;
+    }
+
+    Transaction[] public transactionHistory;
 
     constructor(uint initBalance) payable {
         owner = payable(msg.sender);
         balance = initBalance;
     }
 
-    function getBalance() public view returns(uint256){
+    function getBalance() public view returns (uint256) {
         return balance;
     }
 
@@ -32,7 +38,15 @@ contract Assessment {
         assert(balance == _previousBalance + _amount);
 
         // emit the event
-        emit Deposit(_amount);
+        emit Deposit(_amount, block.timestamp);
+
+        // record the transaction
+        transactionHistory.push(Transaction({
+            transactionType: "Deposit",
+            amount: _amount,
+            timestamp: block.timestamp,
+            txHash: blockhash(block.number - 1)
+        }));
     }
 
     // custom error
@@ -55,6 +69,23 @@ contract Assessment {
         assert(balance == (_previousBalance - _withdrawAmount));
 
         // emit the event
-        emit Withdraw(_withdrawAmount);
+        emit Withdraw(_withdrawAmount, block.timestamp);
+
+        // record the transaction
+        transactionHistory.push(Transaction({
+            transactionType: "Withdraw",
+            amount: _withdrawAmount,
+            timestamp: block.timestamp,
+            txHash: blockhash(block.number - 1)
+        }));
+    }
+
+    function multiply(uint8 num1, uint8 num2) public pure returns (uint8) {
+        require(num1 < 10 && num2 < 10, "Inputs must be single digits (0-9)");
+        return num1 * num2;
+    }
+
+    function getTransactionHistory() public view returns (Transaction[] memory) {
+        return transactionHistory;
     }
 }
